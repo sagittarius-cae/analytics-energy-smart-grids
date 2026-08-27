@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  # Service 1: Core Python Analytics Environment (JupyterLab)
+  jupyter-workspace:
+    build: .
+    container_name: python_jupyter_analyst
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/workspace
+      - ./data:/workspace/data # Explicitly mapping data folder for persistency
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # Service 2: The DuckDB Local Graphical UI App
+  duckdb-ui:
+    image: ghcr.io/ibero-data/duck-ui:latest
+    container_name: local_duckdb_ui
+    ports:
+      - "5522:5522"
+    volumes:
+      - ./database:/data # Mounts the database folder to browse the .db file visually
+      - ./data:/workspace/data # Shares the same data folder so the UI can query CSVs directly
+    restart: always
