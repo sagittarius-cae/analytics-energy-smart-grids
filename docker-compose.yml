@@ -12,6 +12,7 @@ services:
       - ./data:/workspace/data # Explicitly mapping data folder for persistency
     environment:
       - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/workspace  
 
   # Service 2: The DuckDB Local Graphical UI App
   duckdb-ui:
