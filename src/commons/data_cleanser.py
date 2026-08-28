@@ -1,4 +1,6 @@
 import polars as pl
+import polars.selectors as cs
+from datetime import datetime
 
 
 def clean_data(df:DataFrame, file_name:str, primary_key:str, colums:list[str])->pl.DataFrame:
@@ -16,7 +18,12 @@ def clean_data(df:DataFrame, file_name:str, primary_key:str, colums:list[str])->
                 pl.col(primary_key).is_not_null() & 
                 (pl.col(primary_key).str.strip_chars() != "")
             )
+        
+            # To-do: Add a condition to know if the columns (floats, interger, double) are set as parameter 
+            # into this function to apply the logic bwlow
             .with_columns([
+                # to-do: implement a mechanism to identify the data type for each column from the numeric array
+                # to apply the correct cast
                 pl.col("voltage_kv").fill_null(pl.col("voltage_kv").median()).cast(target_dtype)
             ])
     
