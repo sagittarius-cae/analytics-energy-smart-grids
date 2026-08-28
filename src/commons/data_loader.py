@@ -23,6 +23,13 @@ def read_csv(filename:str)->pl.DataFrame:
         ignore_errors=False,        # Set to True to drop malformed/corrupted rows instead of crashing
         try_parse_dates=True        # Automatically convert date/time columns to Polars Date/Datetime types
     )
+
+    # 2. Delete the column indexes if Polars read it without name
+    # (Sometime the system exports an invisible index at the beginning that it does read as "column_0" or "column_1")
+    corrupted_columns= [col for col in df.columns if "column" in col]
+    if corrupted_columns:
+        df = df.drop(corrupted_columns)
+
     return df
 
 
