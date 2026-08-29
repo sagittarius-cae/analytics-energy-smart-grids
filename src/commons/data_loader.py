@@ -1,7 +1,36 @@
 import os
 from pathlib import Path
 import polars as pl
+from datetime import datetime
 
+
+def injest_data(filename:str)->pl.LazyDataFrame:
+    
+    ingestion_time = datetime.now()
+
+    # Starts directly in your current notebook directory
+    data_dir = Path.cwd() / "data/1_rawdata" if (Path.cwd() / "data").exists() else Path.cwd().parent / "data/1_rawdata"
+    parquet_dir = Path.cwd() / "data/2_bronze" if (Path.cwd() / "data").exists() else Path.cwd().parent / "data/2_bronze"
+    
+    # Combine paths cleanly
+    csv_path = data_dir / filename.".csv"
+
+    parquet_path = parquet_dir / filename.".parquet"
+
+    # 1. Scan the CSV lazily
+    pl.scan_csv(filename)
+    # 2. Add metadata columns using lit() for literal values
+    .with_columns(
+        [
+            pl.lit("{source_file).cs").alias("ingestion_source"),
+            pl.lit(ingestion_time).alias("ingestion_timestamp"),
+        ]
+    )
+    # 3. Process via streaming engine to handle metadata creation
+    .collect(streaming=True)
+    # 4. Write the final DataFrame to Parquet
+    .write_parquet(parquet_path)
+)
 
 def read_csv(filename:str)->pl.DataFrame:
     # Starts directly in your current notebook directory
