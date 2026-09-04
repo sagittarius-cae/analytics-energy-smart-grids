@@ -1,8 +1,9 @@
 .vscode
 .Trash-0
 .ipynb_checkpoints
-data/1_rawdata/*.csv
-data/2_cleaned/*.csv
+data/1_rawdata/*
+data/2_bronze/*
+data/3_cleaned/*
 # Ignore all Python bytecode cache folders
 __pycache__/
 *.pyc
