@@ -1,0 +1,46 @@
+
+## Agrupación final por dominio de negocio (13 entidades, corregida y verificada contra SGAM)
+
+| # | Dominio | Entidades (CSV) | Estado SGAM |
+|---|---|---|---|
+| 1 | **Bulk Generation** | `power_plant` | Dominio oficial SGAM |
+| 2 | **DER** | `renewable_source`, `energy_storage` | Dominio oficial SGAM |
+| 3 | **Grid Operations** | `substation`, `power_transformer`, `distribution_network`, `distribution_transformer`, `scada_dms` | Fusiona Transmission + Distribution de SGAM (ver nota) |
+| 4 | **Customer Premises** | `consumer` | Dominio oficial SGAM |
+| 5 | **Metering** | `ami_head_end`, `smart_meter` | Capacidad de negocio, no dominio SGAM (la métrica es función transversal en el estándar) |
+| 6 | **Corporate Master Data** | `utility_provider` | No es dominio SGAM (vive en el eje de "zonas", no en el de dominios) |
+| 7 | **MDM** | `data_mgmt_system` | No es dominio SGAM (capacidad de TI) |
+
+**13 de 13 entidades cubiertas, ninguna duplicada, ninguna huérfana.**
+
+**Nota sobre el dominio 3, para que la decisión quede explícita y no como algo que dejé pasar:** SGAM separa Transmission y Distribution. Ya vimos que `substation.Substation Type` sí tiene el dato para hacerlo (`Transmission` vs `Distribution` son valores reales de la columna). No lo separo aquí porque separar exigiría filtrar por fila dentro de una misma tabla, no agrupar la tabla completa — eso es una vista SQL adicional (`WHERE "Substation Type" = 'Transmission'`), no un cambio en esta tabla de dominios. Si en algún momento necesitas ese nivel de detalle, es un `WHERE` sobre esta misma agrupación, no un rediseño.
+
+Con esto, la corrección que arrastrábamos queda cerrada: `power_plant` sale de donde estaba junto a `renewable_source`, y queda solo en `Bulk Generation`; `energy_storage` entra a convivir con `renewable_source` en `DER`, resolviendo lo que llevaba varias vueltas sin definirse.
+
+Guardé esta agrupación en el archivo del proyecto para no volver a perderla. ¿Actualizo el artifact/diagrama/PDF con esta versión final, o la dejamos aquí como referencia de texto por ahora?
+
+Corporate Master DATA
+   -  UTILITY_PROVIDER
+
+Customer
+  - CONSUMER
+
+Generation DER 
+ - ENERGY_STORAGE
+ - POWER_PLANT
+ - RENEWABLE_SOURCE
+
+GRID Operations
+ - DISTRIBUTION_NETWORK
+ - DISTRIBUTION_TRANSFORMER
+ - POWER_TRANSFORMER
+ - SCADA_DMS
+ - SUBSTATION
+ 
+
+MDM
+- DATA_MGMT_SYSTEM
+
+Metering
+- AMI_HEAD_END
+- SMART_METER

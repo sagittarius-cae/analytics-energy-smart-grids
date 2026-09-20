@@ -1,0 +1,25 @@
+Based on this ERD, here's a structured breakdown for your smart grid analytics project:
+
+Dimensions (descriptive/reference tables)
+UTILITY_PROVIDER — name, region
+POWER_PLANT / RENEWABLE_SOURCE / ENERGY_STORAGE — generation source types, capacity ratings
+SUBSTATION — type, location, voltage_kv, source_type (polymorphic link to generation)
+DISTRIBUTION_NETWORK — feeder_type
+CONSUMER — account_type, address
+AMI_HEAD_END / SCADA_DMS / DATA_MGMT_SYSTEM — network/system infrastructure metadata
+Time dimension (implied, not modeled) — install_date, reading_date on SMART_METER suggest you'll want a date dimension for trend analysis
+Facts (measures/transactional grain)
+SMART_METER is your central fact-like table: meter readings at meter × transformer × consumer × time grain (with 15M+ rows, this is your primary fact)
+capacity_mw (POWER_PLANT), output_kw (RENEWABLE_SOURCE), capacity_kwh (ENERGY_STORAGE) — generation-side measures
+capacity_mva (POWER_TRANSFORMER), rated_kva (DISTRIBUTION_TRANSFORMER) — grid capacity measures
+voltage_kv (SUBSTATION) — network measure
+3 Insights
+Generation mix imbalance — SUBSTATION's polymorphic source_type/source_id lets you quantify what % of load is fed by POWER_PLANT vs RENEWABLE_SOURCE vs ENERGY_STORAGE per substation/region, revealing renewable penetration gaps.
+Transformer loading risk — comparing rated_kva (DISTRIBUTION_TRANSFORMER) against downstream SMART_METER meter counts/consumption can flag transformers serving disproportionately more consumers than their rated capacity suggests is safe.
+Monitoring coverage gaps — SCADA_DMS monitors both SUBSTATION and DISTRIBUTION_NETWORK, but if some substations/networks lack a scada_id, that's a blind spot in grid visibility worth surfacing.
+2 Impacts
+Reliability/outage risk — overloaded distribution transformers (many meters per rated_kva) increase failure probability and outage exposure for downstream consumers.
+Decarbonization tracking — low renewable/storage share feeding substations in certain regions signals where the utility is furthest from clean-energy targets, affecting both compliance and cost exposure (fuel price volatility for POWER_PLANT-fed substations).
+2 Actionable Recommendations
+Prioritize infrastructure upgrades where transformer-to-meter ratios exceed a safe threshold — target capacity expansion or load-balancing before failures occur.
+Target renewable/storage buildout at substations currently 100% dependent on POWER_PLANT sourcing, starting with regions showing highest consumer density (biggest reliability + emissions payoff per dollar invested).
