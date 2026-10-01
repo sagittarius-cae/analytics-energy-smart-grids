@@ -37,12 +37,12 @@ SELECT
     p.provider_id, 
     p.name AS "provider_name", 
     p.region AS "provider_region",
-    CASE s.source_type WHEN 'Power Plant' THEN bg.type ELSE der.type END AS "source_asset_type",
+    CASE s.source_type WHEN 'POWER_PLANT' THEN bg.type ELSE der.type END AS "source_asset_type",
     (SELECT COUNT(*) FROM dim_power_transformer pt WHERE pt.substation_id = s.substation_id) AS "power_transformer_count",
     (SELECT COUNT(*) FROM dim_distribution_network dn WHERE dn.substation_id = s.substation_id) AS "distribution_network_count"
 FROM read_parquet('/workspace/data/3_cleaned/substation.parquet') s
 LEFT JOIN read_parquet('/workspace/data/3_cleaned/scada_dms.parquet') sc   ON sc.system_id = s.scada_id
 LEFT JOIN dim_utility_provider p   ON p.provider_id = sc.provider_id
-LEFT JOIN dim_generation_bulk bg ON s.source_type = 'Power Plant' AND bg.plant_id = s.source_id
-LEFT JOIN dim_der der            ON s.source_type IN ('Renewable Source','Energy Storage') AND der.der_id = s.source_id;
+LEFT JOIN dim_generation_bulk bg ON s.source_type = 'POWER_PLANT' AND bg.plant_id = s.source_id
+LEFT JOIN dim_der der            ON s.source_type IN ('RENEWABLE_SOURCE','ENERGY_STORAGE') AND der.der_id = s.source_id;
 

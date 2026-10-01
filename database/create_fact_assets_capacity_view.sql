@@ -6,7 +6,7 @@
 CREATE OR REPLACE VIEW fact_assets_capacity AS
 SELECT "plant_id" AS "asset_id", 
        'bulk_generation' AS "domain", 
-       'power_plant' AS "assest_type", 
+       'power_plant' AS "asset_type", 
        "capacity_mw" AS "value", 
        'mw' AS "unit" 
 FROM read_parquet('/workspace/data/3_cleaned/power_plants.parquet')
