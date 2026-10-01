@@ -8,7 +8,7 @@
 CREATE OR REPLACE VIEW dim_der AS
 SELECT
      source_id AS "der_id",
-    'renewable_source' AS "der_type",
+    'Renewable Source' AS "der_type",
     "type",
     "output_kw" AS "capacity_value",
     'kW' AS "capacity_unit"

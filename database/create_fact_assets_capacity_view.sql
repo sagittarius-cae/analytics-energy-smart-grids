@@ -4,7 +4,7 @@
 -- ============================================================
 
 CREATE OR REPLACE VIEW fact_assets_capacity AS
-SELECT "plant_id" AS "assest_id", 
+SELECT "plant_id" AS "asset_id", 
        'bulk_generation' AS "domain", 
        'power_plant' AS "assest_type", 
        "capacity_mw" AS "value", 
