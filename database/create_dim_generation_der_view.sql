@@ -12,7 +12,7 @@ SELECT
     "type",
     "output_kw" AS "capacity_value",
     'kW' AS "capacity_unit"
-FROM read_parquet('./data/3_cleaned/renewable_source.parquet')
+FROM read_parquet('/workspace/data/3_cleaned/renewable_source.parquet')
 
 UNION ALL
 
@@ -22,4 +22,4 @@ SELECT
     "type",
     "capacity_kwh" AS "capacity_value",
     'kWh' AS "capacity_unit"
-FROM read_parquet('./data/3_cleaned/energy_storage.parquet');
+FROM read_parquet('/workspace/data/3_cleaned/energy_storage.parquet');

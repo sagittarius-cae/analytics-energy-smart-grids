@@ -8,4 +8,4 @@ SELECT system_id ,
        storage_type, 
        analytics_engine
 
-FROM read_parquet('./data/3_cleaned/data_mgmt_system.parquet')
+FROM read_parquet('/workspace/data/3_cleaned/data_mgmt_system.parquet')
