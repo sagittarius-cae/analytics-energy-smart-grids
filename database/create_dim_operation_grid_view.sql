@@ -18,7 +18,8 @@ FROM read_parquet('/workspace/data/3_cleaned/distribution_transformer.parquet');
 CREATE OR REPLACE VIEW dim_distribution_network AS
 SELECT dn.network_id, 
        dn.substation_id, 
-       dn.feeder_type, dn.scada_id,
+       dn.feeder_type, 
+       dn.scada_id,
        (SELECT COUNT(*) FROM dim_distribution_transformer dt WHERE dt.network_id = dn.network_id) AS "distribution_transformer_count"
 FROM read_parquet('/workspace/data/3_cleaned/distribution_network.parquet') dn;
 
@@ -37,7 +38,7 @@ SELECT
     p.provider_id, 
     p.name AS "provider_name", 
     p.region AS "provider_region",
-    CASE s.source_type WHEN 'POWER_PLANT' THEN bg.type ELSE der.type END AS "source_asset_type",
+    CASE s.source_type WHEN 'POWER_PLANT' THEN bg.type ELSE der.der_type END AS "source_asset_type",
     (SELECT COUNT(*) FROM dim_power_transformer pt WHERE pt.substation_id = s.substation_id) AS "power_transformer_count",
     (SELECT COUNT(*) FROM dim_distribution_network dn WHERE dn.substation_id = s.substation_id) AS "distribution_network_count"
 FROM read_parquet('/workspace/data/3_cleaned/substation.parquet') s

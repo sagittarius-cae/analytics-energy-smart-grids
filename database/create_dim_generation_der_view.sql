@@ -6,20 +6,19 @@
 -- ============================================================
 
 CREATE OR REPLACE VIEW dim_der AS
+
 SELECT
-     source_id AS "der_id",
-    'Renewable Source' AS "der_type",
-    "type",
-    "output_kw" AS "capacity_value",
-    'kW' AS "capacity_unit"
-FROM read_parquet('/workspace/data/3_cleaned/renewable_source.parquet')
+    es.storage_id AS "der_id",
+    es.type AS "der_type",
+    es.capacity_kwh AS "capacity_value",
+    'kWh' AS "capacity_unit"
+FROM read_parquet('/workspace/data/3_cleaned/energy_storage.parquet') es
 
 UNION ALL
 
 SELECT
-    storage_id AS "der_id",
-    'Energy Storage' AS "der_type",
-    "type",
-    "capacity_kwh" AS "capacity_value",
-    'kWh' AS "capacity_unit"
-FROM read_parquet('/workspace/data/3_cleaned/energy_storage.parquet');
+    rs.source_id AS "der_id",
+    rs.type AS "der_type",
+    rs.output_kw AS "capacity_value",
+    'kW' AS "capacity_unit"
+FROM read_parquet('/workspace/data/3_cleaned/renewable_source.parquet') rs;

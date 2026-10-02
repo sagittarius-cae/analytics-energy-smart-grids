@@ -4,40 +4,40 @@
 -- ============================================================
 
 CREATE OR REPLACE VIEW fact_assets_capacity AS
-SELECT "plant_id" AS "asset_id", 
-       'bulk_generation' AS "domain", 
-       'power_plant' AS "asset_type", 
-       "capacity_mw" AS "value", 
-       'mw' AS "unit" 
-FROM read_parquet('/workspace/data/3_cleaned/power_plants.parquet')
 
-UNION ALL
-
-
-SELECT "der_id",
-       "der_type",
-       "type",
-       "capacity_value",
-       "capacity_unit"
+SELECT  CAST(der_id AS VARCHAR) AS "asset_id",
+        CAST(der_type AS VARCHAR) AS "asset_type",
+        CAST('Generation DER' AS VARCHAR) AS "domain",
+        CAST(capacity_value AS DOUBLE) AS "value",
+        CAST(capacity_unit AS VARCHAR) AS "unit"
 FROM  dim_der
 
 
 UNION ALL
 
-SELECT  "transformer_id", 
-        'grid_operations', 
-        'power_transformer', 
-        "capacity_mva", 
-        'mva' 
+SELECT  CAST(transformer_id AS VARCHAR) AS "asset_id", 
+        CAST('POWER_TRANSFORMER' AS VARCHAR) AS "asset_type",
+        CAST('Power Transformer' AS VARCHAR) as "domain",
+        CAST(capacity_mva AS DOUBLE) AS "value", 
+        CAST('mva' AS VARCHAR) AS "unit"
 FROM dim_power_transformer
 
 UNION ALL
 
-SELECT "transformer_id", 
-       'grid_operations', 
-       'distribution_transformer', 
-       "rated_kva", 
-       'kva' 
+SELECT  CAST(transformer_id AS VARCHAR) AS "asset_id",  
+        CAST('DISTRIBUTION_TRANSFORMER'AS VARCHAR) AS "asset_type", 
+        CAST('Distribution Transformer' AS VARCHAR) AS "domain",
+        CAST(rated_kva AS DOUBLE) AS "value", 
+        CAST('kva' AS VARCHAR) AS "unit" 
 
-FROM dim_distribution_transformer;
+FROM dim_distribution_transformer
+
+UNION ALL
+
+SELECT  CAST(plant_id AS VARCHAr) AS "asset_id", 
+        CAST('POWER_PLANT' AS VARCHAR) AS "asset_type", 
+        CAST('Power Plants' AS VARCHAR) AS "domain",
+        CAST(capacity_mw AS DOUBLE) AS "value", 
+        CAST('mw' AS VARCHAR) AS "unit" 
+FROM read_parquet('/workspace/data/3_cleaned/power_plants.parquet');
 
