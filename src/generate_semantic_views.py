@@ -71,7 +71,52 @@ class AnalyticsRepository:
     def select_fact_assets_capacity(self)->pl.LazyFrame:
         lazy_frame = self.duckdb_connection.execute('SELECT * FROM fact_assets_capacity').pl().lazy()
         return lazy_frame
+
+    ### - Generate parquet files with the correct semantic views to be plotted on dashboards after.
+    def materialize_views_to_parquet(self, output_dir="/workspace/data/4_analytics"):
+        # Ensure the target analytics directory exists
+        os.makedirs(output_dir, exist_ok=True)
+
+        # List of all semantic dimensions and fact views to materialize
+        views_to_export = [
+            "dim_utility_provider",
+            "dim_consumer",
+            "dim_data_mgmt_system",
+            "dim_der",
+            "dim_generation_bulk",
+            "dim_power_transformer",
+            "dim_distribution_transformer",
+            "dim_distribution_network",
+            "dim_metering",
+            "dim_operation_grid",  # Pillar 2
+            "fact_assets_capacity",  # Pillar 1[cite: 1]
+            "fact_smart_meters",  # Pillars 3 & 4[cite: 4]
+        ]   
+        print("Starting materialization of semantic layer to Parquet...")
+
+        for view_name in views_to_export:
+            file_path = os.path.join(output_dir, f"{view_name}.parquet")
+            # Execute DuckDB's COPY command to write the view to disk
+            self.duckdb_connection.execute(
+                f"COPY (SELECT * FROM {view_name}) TO '{file_path}' (FORMAT PARQUET);"
+            )
+            print(f"  [EXPORTED] {view_name} -> {file_path}")
+
+        print("Materialization complete!")
     
-    
+    ### -  Close duckdb connection from the current instance.
     def close_duckdb_connection(self):
         self.duckdb_connection.close()
+
+    
+    ### -- Scan Analytics Layer
+    
+    def scan_analytics_layer(self)-> tuple[pl.LazyFrame, pl.LazyFrame, pl.LazyFrame]:
+        analytics_dir: str = "/workspace/data/4_analytics"
+
+        """Returns lazy scans of core analytics parquet files to protect RAM."""
+        return {
+            "capacity": pl.scan_parquet(f"{analytics_dir}/fact_assets_capacity.parquet"),
+            "grid": pl.scan_parquet(f"{analytics_dir}/dim_operation_grid.parquet"),
+            "meters": pl.scan_parquet(f"{analytics_dir}/fact_smart_meters.parquet"),
+        }
