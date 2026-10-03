@@ -4,6 +4,7 @@
 data/1_rawdata/*
 data/2_bronze/*
 data/3_cleaned/*
+data/4_analytics/*
 # Ignore all Python bytecode cache folders
 __pycache__/
 *.pyc
