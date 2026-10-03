@@ -4,9 +4,9 @@ import seaborn as sns
 
 
 class DashboardRenderer:
-  """Responsible solely for collecting aggregated metrics from LazyFrames
+  """Responsible for collecting aggregated metrics from LazyFrames
 
-  and rendering the 2x2 executive operational dashboard.
+  and rendering a clean, minimalist, insight-driven executive dashboard.
   """
 
   def __init__(
@@ -58,84 +58,123 @@ class DashboardRenderer:
         .collect()
     )
 
-    # 2. Set up visualization theme and figure canvas
-    sns.set_theme(style="whitegrid")
-    fig, axes = plt.subplots(2, 2, figsize=(18, 14))
-    fig.suptitle(
-        "Smart Grid Operational Pillars: Impact & Insights Dashboard",
-        fontsize=20,
-        fontweight="bold",
+    # Convert to pandas and apply business-friendly formatting
+    pdf_cap = df_cap_agg.to_pandas()
+    pdf_cap["asset_type"] = (
+        pdf_cap["asset_type"].str.replace("_", " ").str.title()
     )
 
-    # Panel 1: Pillar 1 - Generation Capacity Mix
-    sns.barplot(
-        data=df_cap_agg.to_pandas(),
-        x="asset_type",
-        y="total_capacity",
-        hue="unit",
-        ax=axes[0, 0],
-        palette="deep",
-    )
-    axes[0, 0].set_title(
-        "Pillar 1: Capacity Mix (Normalized by Physical Unit)",
-        fontsize=14,
-        fontweight="bold",
-    )
-    axes[0, 0].tick_params(axis="x", rotation=30)
-
-    # Panel 2: Pillar 2 - Grid Topology & Substation Density
-    df_grid_melted = df_grid_agg.to_pandas().melt(
+    pdf_grid = df_grid_agg.to_pandas()
+    pdf_grid_melted = pdf_grid.melt(
         id_vars=["provider_region", "substation_type"],
         value_vars=["avg_power_transformers", "avg_distribution_networks"],
         var_name="Asset_Metric",
         value_name="Average_Count",
     )
+    pdf_grid_melted["Asset_Metric"] = pdf_grid_melted["Asset_Metric"].replace({
+        "avg_power_transformers": "Avg Power Transformers",
+        "avg_distribution_networks": "Avg Distribution Networks",
+    })
+
+    pdf_meters = df_meters_agg.to_pandas()
+
+    pdf_lifecycle = df_lifecycle.to_pandas()
+    pdf_lifecycle["comm_protocol"] = pdf_lifecycle["comm_protocol"].str.upper()
+
+    # 2. Set up clean minimal visualization theme
+    sns.set_theme(style="ticks")
+    fig, axes = plt.subplots(2, 2, figsize=(20, 16))
+    fig.suptitle(
+        "Smart Grid Operational Pillars: Executive Impact Dashboard",
+        fontsize=20,
+        fontweight="bold",
+        y=0.96,
+    )
+
+    # --- Panel 1: Pillar 1 - Generation & Asset Capacity Mix (Using Qualitative Palette) ---
     sns.barplot(
-        data=df_grid_melted,
+        data=pdf_cap,
+        y="asset_type",
+        x="total_capacity",
+        hue="unit",
+        orient="h",
+        ax=axes[0, 0],
+        palette="Set2",  # Qualitative palette avoids false magnitude implications
+    )
+    axes[0, 0].set_title(
+        "Pillar 1: Generation & Asset Capacity Mix (Log Scale)",
+        fontsize=13,
+        fontweight="bold",
+    )
+    axes[0, 0].set_xlabel("Total Capacity (Log Scale)", fontsize=11)
+    axes[0, 0].set_ylabel("Asset Type", fontsize=11)
+    axes[0, 0].set_xscale("log")
+    axes[0, 0].legend(title="Unit", loc="lower right", frameon=False)
+    sns.despine(ax=axes[0, 0], top=True, right=True)
+
+    # --- Panel 2: Pillar 2 - Grid Topology & Substation Density ---
+    sns.barplot(
+        data=pdf_grid_melted,
         x="provider_region",
         y="Average_Count",
         hue="substation_type",
         ax=axes[0, 1],
-        palette="muted",
+        palette="Blues_d",
     )
     axes[0, 1].set_title(
-        "Pillar 2: Regional Substation Asset Density Bottlenecks",
-        fontsize=14,
+        "Pillar 2: Regional Substation Density Bottlenecks",
+        fontsize=13,
         fontweight="bold",
     )
+    axes[0, 1].set_xlabel("Provider Region", fontsize=11)
+    axes[0, 1].set_ylabel("Average Asset Count", fontsize=11)
+    axes[0, 1].legend(title="Substation Type", frameon=False)
+    sns.despine(ax=axes[0, 1], top=True, right=True)
 
-    # Panel 3: Pillar 3 - AMI Multi-Tenancy & Third-Party Dependencies
+    # --- Panel 3: Pillar 3 - AMI Multi-Tenancy & Third-Party Vendors ---
     sns.barplot(
-        data=df_meters_agg.to_pandas(),
-        x="grid_provider_name",
-        y="total_meters",
+        data=pdf_meters,
+        y="grid_provider_name",
+        x="total_meters",
         hue="metering_provider_name",
+        orient="h",
         ax=axes[1, 0],
-        palette="Set2",
+        palette="Blues_r",
     )
     axes[1, 0].set_title(
-        "Pillar 3: AMI Multi-Tenancy & Third-Party Dependencies",
-        fontsize=14,
+        "Pillar 3: AMI Multi-Tenancy Vendor Ecosystem",
+        fontsize=13,
         fontweight="bold",
     )
-    axes[1, 0].tick_params(axis="x", rotation=25)
+    axes[1, 0].set_xlabel("Total Connected Meters", fontsize=11)
+    axes[1, 0].set_ylabel("Grid Provider", fontsize=11)
+    axes[1, 0].legend(title="Metering Provider", loc="lower right", frameon=False)
+    sns.despine(ax=axes[1, 0], top=True, right=True)
 
-    # Panel 4: Pillar 4 - Meter Deployment Waves & Protocols
+    # --- Panel 4: Pillar 4 - Clean Focal Trend Analysis ---
     sns.lineplot(
-        data=df_lifecycle.to_pandas(),
+        data=pdf_lifecycle,
         x="install_year",
         y="total_installed",
         hue="comm_protocol",
-        marker="o",
-        linewidth=2.5,
+        style="comm_protocol",
+        markers=True,
+        linewidth=2.2,
         ax=axes[1, 1],
+        palette="tab10",
     )
     axes[1, 1].set_title(
-        "Pillar 4: Meter Cohort Deployment Waves & Protocol Evolution",
-        fontsize=14,
+        "Pillar 4: Protocol Cohort Evolution & Deployment Waves",
+        fontsize=13,
         fontweight="bold",
     )
-    axes[1, 1].tick_params(axis="x", rotation=45)
+    axes[1, 1].set_xlabel("Installation Year", fontsize=11)
+    axes[1, 1].set_ylabel("Total Meters Installed", fontsize=11)
+    axes[1, 1].tick_params(axis="x", rotation=30)
+    axes[1, 1].legend(
+        title="Protocol", frameon=False, bbox_to_anchor=(1.02, 1), loc="upper left"
+    )
+    sns.despine(ax=axes[1, 1], top=True, right=True)
 
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    plt.tight_layout(rect=[0, 0.03, 0.92, 0.94])
     plt.show()
