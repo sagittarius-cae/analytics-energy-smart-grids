@@ -9,7 +9,7 @@ services:
       - "8888:8888"
     volumes:
       - .:/workspace
-      - ./data:/workspace/data # Explicitly mapping data folder for persistency
+      - ./data:/workspace/data
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/workspace  
@@ -21,6 +21,46 @@ services:
     ports:
       - "5522:5522"
     volumes:
-      - ./database:/data # Mounts the database folder to browse the .db file visually
-      - ./data:/workspace/data # Shares the same data folder so the UI can query CSVs directly
+      - ./database:/data
+      - ./data:/workspace/data
     restart: always
+
+  # Service 3: Base de datos para la metadata de Airflow
+  airflow-postgres:
+    image: postgres:13
+    container_name: analytics_airflow_db
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    volumes:
+      - ./airflow_metadata:/var/lib/postgresql/data
+    restart: always
+
+  # Service 4: Airflow (Orquestador que ejecuta tus scripts .py)
+  airflow-orchestrator:
+    build: .  # Utiliza el mismo Dockerfile con Polars/DuckDB
+    container_name: analytics_airflow_runner
+    restart: always
+    user: "${UID:-1000}:${GID:-1000}" # Sincroniza permisos con tu usuario local
+    depends_on:
+      - airflow-postgres
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/workspace               
+      - ./data:/workspace/data     
+      - ./database:/workspace/database 
+      - ./dags:/workspace/dags        # Aquí colocarás tus pipelines
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/workspace
+      - AIRFLOW_HOME=/workspace/airflow_home
+      - AIRFLOW__CORE__DAGS_FOLDER=/workspace/dags
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+    command: >
+      bash -c "airflow db upgrade && 
+               airflow users create --username admin --password admin --firstname Admin --lastname Admin --role Admin --email admin@example.com || true &&
+               airflow webserver & airflow scheduler"
