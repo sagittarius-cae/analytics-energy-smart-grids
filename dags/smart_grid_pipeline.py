@@ -67,6 +67,20 @@ CONFIG_PIPELINE = {
     # ... Registra aquí tus 12 archivos restantes con sus respectivas configuraciones
 }
 
+# 2. LISTA ORDENADA DE ARCHIVOS SQL
+# Colócalos en el orden estricto en que deben ejecutarse para evitar errores de dependencias entre vistas
+SQL_FILES_ORDER = [
+    "create_consumer_view.sql",
+    "create_dim_utility_provider_view.sql',
+    "create_dim_data_mgmt_system_view.sql",
+    "create_dim_generation_der_view.sql",
+    "create_dim_metering_view.sql",
+    "create_dim_generation_bulk_view.sql"
+    "create_dim_operation_grid_view.sql",
+    "create_fact_smart_meters_view.sql",
+    "create_fact_assets_capacity_view.sql"
+]
+
 # PASO 1 y 2 GRANULAR: Se ejecuta de forma independiente por cada archivo CSV
 def run_data_processing(file_name, id_column, cleansing_arguments):
     # Ingestión (Bronze - Retorna LazyFrame)
@@ -77,23 +91,28 @@ def run_data_processing(file_name, id_column, cleansing_arguments):
     
     return f"File {file_name} processed and as curated parquet."
 
-# PASO 3 UNIFICADO: Ejecuta DuckDB en memoria leyendo los Parquet curados
 def run_semantic_modeling():
+    # Instanciamos el repositorio: se abre la conexión a DuckDB en memoria (:memory:)
     analytics_repo = AnalyticsRepository()
     
-    # Definimos la ruta exacta dentro del contenedor hacia tu carpeta database/
-    sql_file_path = os.path.join("/workspace", "database", "create_consumer_view.sql")
+    # Directorio base donde están tus archivos SQL dentro del volumen de Docker
+    sql_base_dir = os.path.join("/workspace", "database")
     
-    # DuckDB enciende en memoria, lee los Parquet curados desde 'data/', ejecuta el SQL y persiste la Fase Gold
-    analytics_repo.create_sql_views(sql_file_path)
-    df_gold = analytics_repo.select_dim_consumer()
+    # SOLUCIÓN: Iteramos sobre cada archivo SQL en el orden correcto usando la misma instancia
+    for sql_file in SQL_FILES_ORDER:
+        full_sql_path = os.path.join(sql_base_dir, sql_file)
+        
+        # Invocamos el método para registrar cada vista en la base de datos en memoria actual
+        analytics_repo.create_sql_views(full_sql_path)
     
-    return "Modelo semántico DuckDB finalizado y guardado exitosamente."
+    # C. MATERIALIZACIÓN: Invocamos el método requerido compartiendo obligatoriamente 
+    # la misma instancia para guardar los Parquet finales (Gold) en la carpeta física 'data/'
+    analytics_repo.materialize_views_to_parquet()
 
-# PASO 4: Visualización
-def run_dashboard_generation():
-    generate_seaborn_charts()
-    return "Dashboard de Smart Grids generado exitosamente."
+    analytics_repo.close_duckdb_connection()
+    
+    # Nota: Tu método interno 'select_dim_consumer' debe guardar este archivo Parquet final en 'data/'
+    return "Capa semántica completa: Todos los archivos SQL ejecutados y Fase Gold persistida."
 
 
 # 2. Configuración estándar del DAG de Airflow
@@ -106,43 +125,37 @@ default_args = {
 
 with DAG(
     dag_id='smart_grids_analytics_pipeline',
-    default_args=default_args,
-    description='Pipeline de Smart Grids: Limpieza Granular + Modelado Semántico DuckDB + Seaborn',
-    schedule_interval='@daily',
-    catchup=False
+    default_args = default_args,
+    description = 'Pipeline de Smart Grids: Limpieza Granular + Modelado Semántico DuckDB + Seaborn',
+    schedule_interval = '@daily',
+    catchup = False
 ) as dag:
 
     # Lista para almacenar las 15 tareas paralelas de limpieza
-    limpieza_tasks = []
+    data_curation_tasks = []
 
     # 3. Construcción explícita de las tareas granulares
     for file_name, config in CONFIG_PIPELINE.items():
         
-        task_id = f'procesar_{file_name}'
+        task_id = f'proccess_{file_name}'
         
-        task_limpieza = PythonOperator(
-            task_id=task_id,
-            python_callable=run_data_processing,
-            op_kwargs={
+        task_cleansing = PythonOperator(
+            task_id = task_id,
+            python_callable = run_data_processing,
+            op_kwargs = {
                 'file_name': file_name,
                 'id_column': config['id_col'],
                 'cleansing_arguments': config['extra_args']
             }
         )
-        limpieza_tasks.append(task_limpieza)
+       data_curation_tasks.append(task_cleansing)
 
     # Tarea unificada de modelado (DuckDB en memoria)
     modeling_task = PythonOperator(
-        task_id='crear_capa_semantica_duckdb',
-        python_callable=run_semantic_modeling
-    )
-
-    # Tarea de reportería final (Seaborn)
-    reporting_task = PythonOperator(
-        task_id='generar_reporte_seaborn',
-        python_callable=run_dashboard_generation
+        task_id = 'crear_capa_semantica_duckdb',
+        python_callable = run_semantic_modeling
     )
 
     # 4. Orquestación y dependencias jerárquicas
     # Las 15 tareas corren en paralelo. Cuando todas terminen bien, se ejecuta DuckDB y luego Seaborn.
-    limpieza_tasks >> modeling_task >> reporting_task
+    data_curation_tasks >> modeling_tasks
