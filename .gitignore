@@ -9,3 +9,6 @@ data/4_analytics/*
 __pycache__/
 *.pyc
 *.pyo
+airflow_metadata/
+airflow_home/
+.git/
