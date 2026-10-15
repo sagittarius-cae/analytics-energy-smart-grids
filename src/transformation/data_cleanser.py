@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-def cuarate_data(df:pl.LazyFrame, filename:str, primary_key:str, target_columns:list[str]=None)->pl.DataFrame:
+def curate_data(df:pl.LazyFrame, filename:str, primary_key:str, target_columns:list[str]=None)->pl.DataFrame:
 
     # --- STEP 1: NAMING CONVENSION ---
     # Usamos collect_schema().names() para obtener las columnas iniciales sin alertas de rendimiento
@@ -74,4 +74,4 @@ def cuarate_data(df:pl.LazyFrame, filename:str, primary_key:str, target_columns:
     filtered_df.sink_parquet(parquet_path)
 
     # 5. Retornamos el LazyFrame completamente preparado
-    return filtered_df.collect(streaming=True)
+    return filtered_df.collect(engine="streaming")

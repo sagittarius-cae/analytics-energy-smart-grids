@@ -12,3 +12,6 @@ __pycache__/
 airflow_metadata/
 airflow_home/
 .git/
+*.duckdb
+*.db
+*.log

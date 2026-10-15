@@ -8,8 +8,8 @@ class AnalyticsRepository:
     def __init__(self):
        
         # 1. Locate the folder 'database/' (sibbling of'src/')
-        src_dir = os.path.dirname(os.path.abspath(__file__))
-        self.db_dir = os.path.abspath(os.path.join(src_dir, "..", "database"))
+        module_dir = os.path.dirname(os.path.abspath(__file__))
+        self.db_dir = os.path.abspath(os.path.join(module_dir, "..", "..", "database"))
 
         
         # 2. Define the path for the database file.
